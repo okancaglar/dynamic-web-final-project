@@ -147,53 +147,50 @@ export default function FlightsPage() {
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center vh-100">
-        <span className="spinner-border" role="status">
-          <span className="visually-hidden">Loading…</span>
-        </span>
+                <div className="spinner-border text-accent-teal" role="status">
+                    <span className="visually-hidden">Loading…</span>
+                </div>
             </div>
         );
     }
 
     return (
         <>
-            {/* ─── Navbar ─────────────────────────────────────────────── */}
-            <nav className="navbar navbar-expand-lg navbar-light bg-light">
-                <div className="container">
-                    {/* Logo + App Name */}
+            {/* ─── Navbar for Flights Page ────────────────────────────────────────── */}
+            <nav className="navbar navbar-expand-lg navbar-custom">
+                <div className="container container-centered">
                     <Link href="/" className="navbar-brand d-flex align-items-center">
-                        <Image
-                            src="/logo.png"   // replace with your logo in /public/
-                            alt="Logo"
-                            width={32}
-                            height={32}
-                            priority
-                        />
-                        <span className="ms-2 fw-bold">Flight Ticket</span>
+                        <img src="/logo.png" alt="Logo" width="32" height="32" />
+                        <span className="ms-2">Flight Ticket</span>
                     </Link>
-
-                    <div className="d-flex align-items-center">
-                        {/* Admin Dashboard link (if isAdmin) */}
+                    <div className="ms-auto d-flex align-items-center">
                         {isAdmin && (
-                            <Link href="/admin/dashboard" className="btn btn-outline-primary me-3">
+                            <button
+                                className="btn-navbar"
+                                onClick={() => router.push('/admin/dashboard')}
+                            >
                                 Admin Dashboard
-                            </Link>
+                            </button>
                         )}
-                        <button className="btn btn-outline-secondary" onClick={handleLogout}>
+                        <button
+                            className="btn-navbar"
+                            onClick={handleLogout}
+                        >
                             Logout
                         </button>
                     </div>
                 </div>
             </nav>
 
-            <div className="container mt-4">
-                {error && (
-                    <div className="alert alert-danger" role="alert">
-                        {error}
-                    </div>
-                )}
+            {/* ─── Filter & Flights Grid ─────────────────────────────────────────── */}
+            <div className="mt-4 mb-4 d-flex flex-column align-items-center">
+                {error && <div className="alert alert-danger w-100">{error}</div>}
 
-                {/* ─── Filter Section ───────────────────────────────────── */}
-                <form className="row g-3 mb-4" onSubmit={handleFilterSubmit}>
+                <form
+                    className="row g-3 justify-content-center align-items-end w-100"
+                    onSubmit={handleFilterSubmit}
+                    style={{ maxWidth: '720px' }}
+                >
                     <div className="col-md-3">
                         <label htmlFor="origin" className="form-label">Origin</label>
                         <select
@@ -203,14 +200,11 @@ export default function FlightsPage() {
                             onChange={handleFilterChange('origin')}
                         >
                             <option value="">All</option>
-                            {cities.map((c) => (
-                                <option key={c.city_id} value={c.city_id}>
-                                    {c.city_name}
-                                </option>
+                            {cities.map(c => (
+                                <option key={c.city_id} value={c.city_id}>{c.city_name}</option>
                             ))}
                         </select>
                     </div>
-
                     <div className="col-md-3">
                         <label htmlFor="destination" className="form-label">Destination</label>
                         <select
@@ -220,73 +214,73 @@ export default function FlightsPage() {
                             onChange={handleFilterChange('destination')}
                         >
                             <option value="">All</option>
-                            {cities.map((c) => (
-                                <option key={c.city_id} value={c.city_id}>
-                                    {c.city_name}
-                                </option>
+                            {cities.map(c => (
+                                <option key={c.city_id} value={c.city_id}>{c.city_name}</option>
                             ))}
                         </select>
                     </div>
-
                     <div className="col-md-3">
-                        {/* Floating label for Date */}
-                        <div className="form-floating mb-3">
-                            <input
-                                type="date"
-                                className="form-control"
-                                id="date"
-                                placeholder="Date"
-                                value={filter.date}
-                                onChange={handleFilterChange('date')}
-                            />
-                            <label htmlFor="date">Date</label>
-                        </div>
+                        <label htmlFor="date" className="form-label">Date</label>
+                        <input
+                            type="date"
+                            id="date"
+                            className="form-control"
+                            value={filter.date}
+                            onChange={handleFilterChange('date')}
+                        />
                     </div>
-
-                    <div className="col-md-3 d-grid">
-                        <button type="submit" className="btn btn-primary">
-                            Search Flights
+                    <div className="col-md-2 d-grid">
+                        <button className="btn-accent" type="submit">
+                            Search
                         </button>
                     </div>
                 </form>
+            </div>
 
-                {/* ─── Flights Grid ──────────────────────────────────────── */}
-                <div className="row">
-                    {flights.length === 0 && !error && (
-                        <div className="col-12">
-                            <div className="alert alert-info">No flights found.</div>
-                        </div>
-                    )}
-                    {flights.map((f) => {
-                        // Find city names for display
-                        const fromCity = cities.find((c) => c.city_id === f.from_city)?.city_name || f.from_city;
-                        const toCity   = cities.find((c) => c.city_id === f.to_city)?.city_name   || f.to_city;
+            <div className="row row-symmetrical">
+                {flights.length === 0 && !error && (
+                    <div className="col-12 text-center">
+                        <div className="alert alert-info">No flights found.</div>
+                    </div>
+                )}
 
-                        return (
-                            <div key={f.flight_id} className="col-md-4 mb-4">
-                                <div className="card h-100">
-                                    <div className="card-body d-flex flex-column">
-                                        <h5 className="card-title">
-                                            {fromCity} &rarr; {toCity}
-                                        </h5>
-                                        <p className="card-text flex-grow-1">
-                                            <strong>Departure:</strong> {new Date(f.departure_time).toLocaleString()}<br/>
-                                            <strong>Arrival:</strong>   {new Date(f.arrival_time).toLocaleString()}<br/>
-                                            <strong>Price:</strong>     ${f.price.toFixed(2)}<br/>
-                                            <strong>Seats:</strong>     {f.seats_available} / {f.seats_total}
-                                        </p>
+                {flights.map(f => {
+                    const fromCity = cities.find(c => c.city_id === f.from_city)?.city_name || f.from_city;
+                    const toCity   = cities.find(c => c.city_id === f.to_city)?.city_name   || f.to_city;
+                    return (
+                        <div key={f.flight_id} className="col-sm-6 col-lg-4">
+                            <div className="card card-custom h-100">
+                                <div className="card-body d-flex flex-column">
+                                    <h5 className="card-title text-center">
+                                        {fromCity} &rarr; {toCity}
+                                    </h5>
+                                    <div className="mb-3 text-center text-muted">
+                                        <div>
+                                            <small>Departure:</small><br/>
+                                            {new Date(f.departure_time).toLocaleString()}
+                                        </div>
+                                        <div className="mt-2">
+                                            <small>Arrival:</small><br/>
+                                            {new Date(f.arrival_time).toLocaleString()}
+                                        </div>
+                                    </div>
+                                    <div className="mt-auto text-center">
+                                        <div className="h5 text-accent-teal mb-2">${f.price.toFixed(2)}</div>
+                                        <div className="mb-3">
+                                            <small>Seats: {f.seats_available}/{f.seats_total}</small>
+                                        </div>
                                         <button
-                                            className="btn btn-success mt-auto"
+                                            className="btn-accent w-100"
                                             onClick={() => router.push(`/tickets/buy?flightId=${f.flight_id}`)}
                                         >
-                                            Buy Ticket
+                                            Book Now
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                        );
-                    })}
-                </div>
+                        </div>
+                    );
+                })}
             </div>
         </>
     );

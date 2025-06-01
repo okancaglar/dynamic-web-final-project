@@ -43,8 +43,8 @@ function runMigrations() {
                                                   price            REAL    NOT NULL,
                                                   seats_total      INTEGER NOT NULL,
                                                   seats_available  INTEGER NOT NULL,
-                                                  FOREIGN KEY(from_city) REFERENCES City(city_id),
-                FOREIGN KEY(to_city)   REFERENCES City(city_id)
+                                                  FOREIGN KEY(from_city) REFERENCES City(city_id) ON DELETE CASCADE,
+                FOREIGN KEY(to_city)   REFERENCES City(city_id) ON DELETE CASCADE
                 );
         `, report('Flight'));
 
@@ -56,8 +56,8 @@ function runMigrations() {
                                                   passenger_email   TEXT    NOT NULL,
                                                   flight_id         INTEGER NOT NULL,
                                                   seat_id       INTEGER NOT NULL,
-                                                  FOREIGN KEY(flight_id) REFERENCES Flight(flight_id),
-                                FOREIGN KEY(seat_id)   REFERENCES Seat(seat_id)   ON DELETE RESTRICT
+                                                  FOREIGN KEY(flight_id) REFERENCES Flight(flight_id) ON  DELETE CASCADE,
+                                FOREIGN KEY(seat_id)   REFERENCES Seat(seat_id)   ON DELETE CASCADE
 
                 );
         `, report('Ticket'));
@@ -67,7 +67,7 @@ function runMigrations() {
                   flight_id    INTEGER NOT NULL,
                   seat_number  TEXT    NOT NULL,
                   is_booked    INTEGER NOT NULL DEFAULT 0,   -- 0 = available, 1 = booked
-                  FOREIGN KEY(flight_id) REFERENCES Flight(flight_id)
+                  FOREIGN KEY(flight_id) REFERENCES Flight(flight_id) ON DELETE CASCADE
                 );
         `, report("Seat"));
 

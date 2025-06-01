@@ -1,15 +1,19 @@
 // src/app/layout.js
-import 'bootstrap/dist/css/bootstrap.min.css';
 import './globals.css';
-import { Inter } from 'next/font/google';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import Link from 'next/link';
 
-const inter = Inter({ subsets: ['latin'] });
+export const metadata = {
+    title: 'Flight Ticket App',
+    description: 'Symmetrical, Hopper‐inspired flight booking UI',
+};
 
 export default function RootLayout({ children }) {
     return (
-        <html lang="en" className={inter.className}>
+        <html lang="en">
         <body>
-            {children}
+        {/* ─── Navbar (app‐wide) ───────────────────────────────────────── */}
+        {children}
         </body>
         </html>
     );

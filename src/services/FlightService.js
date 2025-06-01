@@ -139,22 +139,199 @@ async function findFlightById(id) {
  * @returns {Promise<Object>} { changes }
  */
 function updateFlight(params) {
+    const {
+        from_city,
+        to_city,
+        departure_time,
+        arrival_time,
+        price,
+        seats_total: newTotal,
+        flight_id
+    } = params;
+
     const db = getDb();
-    const sql = `
-    UPDATE Flight
-       SET from_city        = ?,
-           to_city          = ?,
-           departure_time   = ?,
-           arrival_time     = ?,
-           price            = ?,
-           seats_total      = ?,
-           seats_available  = ?
-     WHERE flight_id        = ?
-  `;
+
     return new Promise((resolve, reject) => {
-        db.run(sql, params, function(err) {
-            return err ? reject(err) : resolve({ changes: this.changes });
-        });
+        // 1) Fetch the existing flight to get old seats_total
+        db.get(
+            `SELECT seats_total
+         FROM Flight
+        WHERE flight_id = ?`,
+            [flight_id],
+            (err, row) => {
+                if (err) {
+                    return reject(err);
+                }
+                if (!row) {
+                    return reject(new Error('Flight not found'));
+                }
+
+                const oldTotal = row.seats_total;
+
+                // 2) Begin the transaction
+                db.run('BEGIN TRANSACTION;', (err) => {
+                    if (err) return reject(err);
+
+                    // 3) Update the flight's main columns (excluding seats_available)
+                    db.run(
+                        `UPDATE Flight
+               SET from_city       = ?,
+                   to_city         = ?,
+                   departure_time  = ?,
+                   arrival_time    = ?,
+                   price           = ?,
+                   seats_total     = ?
+             WHERE flight_id       = ?`,
+                        [
+                            from_city,
+                            to_city,
+                            departure_time,
+                            arrival_time,
+                            price,
+                            newTotal,
+                            flight_id
+                        ],
+                        function (err) {
+                            if (err) {
+                                return db.run('ROLLBACK;', () => reject(err));
+                            }
+                            if (this.changes === 0) {
+                                // No rows updated—could have been deleted concurrently
+                                return db.run('ROLLBACK;', () => reject(new Error('Flight not found during update')));
+                            }
+
+                            // Calculate difference in total seats
+                            const diff = newTotal - oldTotal;
+
+                            if (diff > 0) {
+                                // 4a) Seats increased: insert seat_numbers oldTotal+1 .. newTotal
+                                let i = oldTotal + 1;
+
+                                function addNextSeat() {
+                                    if (i > newTotal) {
+                                        // Done inserting → recalc availability
+                                        return recalcAvailable();
+                                    }
+                                    const seatNumber = String(i);
+                                    db.run(
+                                        `INSERT INTO Seat (flight_id, seat_number, is_booked)
+                          VALUES (?, ?, 0)`,
+                                        [flight_id, seatNumber],
+                                        (err) => {
+                                            if (err) {
+                                                return db.run('ROLLBACK;', () => reject(err));
+                                            }
+                                            i += 1;
+                                            addNextSeat();
+                                        }
+                                    );
+                                }
+                                addNextSeat();
+
+                            } else if (diff < 0) {
+                                // 4b) Seats decreased: remove seat_numbers newTotal+1 .. oldTotal (only if un‐booked)
+                                let i = oldTotal;
+
+                                function removeSeatIfPossible() {
+                                    if (i <= newTotal) {
+                                        // Done deleting → recalc availability
+                                        return recalcAvailable();
+                                    }
+                                    const seatNumber = String(i);
+                                    // Check if this seat is booked
+                                    db.get(
+                                        `SELECT is_booked
+                       FROM Seat
+                      WHERE flight_id = ?
+                        AND seat_number = ?`,
+                                        [flight_id, seatNumber],
+                                        (err, seatRow) => {
+                                            if (err) {
+                                                return db.run('ROLLBACK;', () => reject(err));
+                                            }
+                                            if (!seatRow) {
+                                                // Seat doesn't exist (skip it)
+                                                i -= 1;
+                                                return removeSeatIfPossible();
+                                            }
+                                            if (seatRow.is_booked) {
+                                                // Cannot remove a booked seat
+                                                return db.run(
+                                                    'ROLLBACK;',
+                                                    () => reject(new Error(`Cannot remove seat ${seatNumber} as it is already booked`))
+                                                );
+                                            }
+                                            // Safe to delete this seat row
+                                            db.run(
+                                                `DELETE FROM Seat
+                           WHERE flight_id = ?
+                             AND seat_number = ?`,
+                                                [flight_id, seatNumber],
+                                                (err) => {
+                                                    if (err) {
+                                                        return db.run('ROLLBACK;', () => reject(err));
+                                                    }
+                                                    i -= 1;
+                                                    removeSeatIfPossible();
+                                                }
+                                            );
+                                        }
+                                    );
+                                }
+                                removeSeatIfPossible();
+
+                            } else {
+                                // 4c) diff === 0 → no change in seat count. Just recalc availability:
+                                recalcAvailable();
+                            }
+
+                            // 5) Recalculate seats_available
+                            function recalcAvailable() {
+                                db.get(
+                                    `SELECT COUNT(*) AS availableCount
+                     FROM Seat
+                    WHERE flight_id = ?
+                      AND is_booked = 0`,
+                                    [flight_id],
+                                    (err, countRow) => {
+                                        if (err) {
+                                            return db.run('ROLLBACK;', () => reject(err));
+                                        }
+                                        const newAvailable = countRow.availableCount;
+
+                                        // 6) Write seats_available back into Flight
+                                        db.run(
+                                            `UPDATE Flight
+                          SET seats_available = ?
+                        WHERE flight_id = ?`,
+                                            [newAvailable, flight_id],
+                                            (err) => {
+                                                if (err) {
+                                                    return db.run('ROLLBACK;', () => reject(err));
+                                                }
+
+                                                // 7) Commit the entire transaction
+                                                db.run('COMMIT;', (err) => {
+                                                    if (err) {
+                                                        return reject(err);
+                                                    }
+                                                    // All done—resolve with the updated counts
+                                                    resolve({
+                                                        changes: this.changes,       // from the first UPDATE Flight
+                                                        seats_total: newTotal,
+                                                        seats_available: newAvailable
+                                                    });
+                                                });
+                                            }
+                                        );
+                                    }
+                                );
+                            }
+                        }
+                    );
+                });
+            }
+        );
     });
 }
 

@@ -22,7 +22,7 @@ function createTicket(data) {
         passenger_surname,
         passenger_email,
         flight_id,
-        seat_id
+        seat_number
     } = data;
     const db = getDb();
     console.log(data);
@@ -35,16 +35,29 @@ function createTicket(data) {
 
                 // 2) check seat exists, belongs to flight, and is free
                 db.get(
-                    `SELECT flight_id, is_booked FROM Seat WHERE seat_id = ?`,
-                    [seat_id],
-                    (err, seat) => {
-                        if (err) return db.run('ROLLBACK', () => reject(err));
-                        if (!seat)    return db.run('ROLLBACK', () => reject(new Error('Seat not found')));
-                        if (seat.flight_id !== flight_id)
-                            return db.run('ROLLBACK', () => reject(new Error('Seat does not belong to flight')));
-                        if (seat.is_booked)
-                            return db.run('ROLLBACK', () => reject(new Error('Seat already booked')));
+                    `SELECT seat_id, is_booked
+                     FROM Seat
+                     WHERE flight_id = ?
+                       AND seat_number = ?`,
+                    [flight_id, seat_number],
+                    (err, seatRow) => {
+                        if (err) {
+                            return db.run('ROLLBACK;', () => reject(err));
+                        }
+                        if (!seatRow) {
+                            return db.run(
+                                'ROLLBACK;',
+                                () => reject(new Error('Seat not found or does not belong to this flight'))
+                            );
+                        }
+                        if (seatRow.is_booked) {
+                            return db.run(
+                                'ROLLBACK;',
+                                () => reject(new Error('Seat already booked'))
+                            );
+                        }
 
+                        const seat_id = seatRow.seat_id;
                         // 3) mark seat booked
                         db.run(
                             `UPDATE Seat SET is_booked = 1 WHERE seat_id = ?`,

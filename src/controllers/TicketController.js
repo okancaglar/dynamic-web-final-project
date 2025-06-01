@@ -15,7 +15,7 @@ async function postTicket(req, res, next) {
             passenger_surname,
             passenger_email,
             flight_id,
-            seat_id
+            seat_number
         } = req.body;
 
         // Basic validation
@@ -32,8 +32,8 @@ async function postTicket(req, res, next) {
         if (typeof flight_id !== 'number' || Number.isNaN(flight_id))
             errors.push('flight_id must be a number');
         if (
-            seat_id !== undefined &&
-            (typeof seat_id !== 'number')
+            seat_number !== undefined &&
+            (typeof seat_number !== 'number')
         )
             errors.push('seat_number must be number when provided');
 
@@ -47,7 +47,7 @@ async function postTicket(req, res, next) {
             passenger_surname,
             passenger_email,
             flight_id,
-            seat_id
+            seat_number
         });
 
         /*

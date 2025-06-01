@@ -110,8 +110,8 @@ async function postFlight(req, res, next) {
  */
 async function putFlight(req, res, next) {
     try {
-        const id = Number(req.params.id);
-        if (Number.isNaN(id)) {
+        const flight_id = Number(req.params.id);
+        if (Number.isNaN(flight_id)) {
             return res.status(400).json({ error: 'Invalid flight ID' });
         }
 
@@ -136,18 +136,18 @@ async function putFlight(req, res, next) {
             return res.status(400).json({ errors });
         }
 
-        const params = [
+        const params = {
             from_city, to_city,
             departure_time, arrival_time,
             price, seats_total, seats_available,
-            id
-        ];
+            flight_id
+    };
         const { changes } = await svcUpdate(params);
         if (changes === 0) {
             return res.status(404).json({ error: 'Flight not found' });
         }
 
-        const updated = await svcFindById(id);
+        const updated = await svcFindById(flight_id);
         res.json(updated);
     } catch (err) {
         next(err);

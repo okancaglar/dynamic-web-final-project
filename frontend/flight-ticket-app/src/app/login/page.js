@@ -3,6 +3,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+
 
 export default function LoginPage() {
     const router = useRouter();
@@ -74,24 +76,41 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="d-flex align-items-center justify-content-center vh-100">
-            <div className="card shadow-sm" style={{ width: '380px' }}>
-                <div className="card-body">
-                    <h2 className="card-title text-center mb-4">Login</h2>
+        <>
+            {/* ─── LOGIN PAGE NAVBAR ────────────────────────────────────────────────── */}
+            <nav className="navbar navbar-expand-lg navbar-custom">
+                <div className="container container-centered">
+                    <Link href="/" className="navbar-brand d-flex align-items-center">
+                        {/* If your logo is dark, you may need to invert its colors in CSS */}
+                        <svg
+                            width="32"
+                            height="32"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                d="M2.5 19.5L12 10L21.5 19.5L12 14V2L2.5 11.5L8.5 13L2.5 19.5Z"
+                                fill="#2AC2C2"
+                            />
+                        </svg>
+                        <span className="ms-2">Flight Ticket</span>
+                    </Link>
+                    <div className="ms-auto">
+                        <Link href="/register" className="nav-button">
+                            <button className="btn-navbar">Register</button>
+                        </Link>
+                    </div>
+                </div>
+            </nav>
 
-                    {/* Show an error if login failed */}
-                    {error && (
-                        <div className="alert alert-danger mb-3" role="alert">
-                            {error}
-                        </div>
-                    )}
+            {/* ─── LOGIN FORM (on light gray-blue background, card still white) ───────────────────────── */}
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '75vh' }}>
+                <div className="card card-custom p-4" style={{ width: '100%', maxWidth: '380px' }}>
+                    <h2 className="text-center mb-3">Log In</h2>
 
-                    {/* Show success message if login succeeded */}
-                    {!error && successMessage && (
-                        <div className="alert alert-success mb-3" role="alert">
-                            {successMessage}
-                        </div>
-                    )}
+                    {error && <div className="alert alert-danger">{error}</div>}
+                    {!error && successMessage && <div className="alert alert-success">{successMessage}</div>}
 
                     <form onSubmit={handleSubmit}>
                         <div className="mb-3">
@@ -101,7 +120,7 @@ export default function LoginPage() {
                                 type="email"
                                 className="form-control"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={e => setEmail(e.target.value)}
                                 disabled={busy || !!successMessage}
                                 required
                             />
@@ -114,7 +133,7 @@ export default function LoginPage() {
                                 type="password"
                                 className="form-control"
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={e => setPassword(e.target.value)}
                                 disabled={busy || !!successMessage}
                                 required
                             />
@@ -122,14 +141,14 @@ export default function LoginPage() {
 
                         <button
                             type="submit"
-                            className="btn btn-primary w-100"
+                            className="btn-accent w-100 mb-3"
                             disabled={busy || !!successMessage}
                         >
-                            {busy ? 'Signing In…' : 'Sign In'}
+                            {busy ? 'Please wait…' : 'Log In'}
                         </button>
                     </form>
                 </div>
             </div>
-        </div>
+        </>
     );
 }

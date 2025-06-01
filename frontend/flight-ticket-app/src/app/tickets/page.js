@@ -72,40 +72,30 @@ export default function TicketsPage() {
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center vh-100">
-        <span className="spinner-border" role="status">
-          <span className="visually-hidden">Loading…</span>
-        </span>
+                <div className="spinner-border text-accent-teal" role="status">
+                    <span className="visually-hidden">Loading…</span>
+                </div>
             </div>
         );
     }
 
     return (
         <>
-            {/* ─── Navbar ─────────────────────────────────────────────── */}
-            <nav className="navbar navbar-expand-lg navbar-light bg-light">
-                <div className="container">
-                    <Link href="/" className="navbar-brand">
-                        Flight Ticket
-                    </Link>
-                    <button className="btn btn-outline-secondary" onClick={handleLogout}>
-                        Logout
-                    </button>
-                </div>
-            </nav>
+            {/* ─── Title & “Back to Flights” ───────────────────────────────── */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <h2>My Tickets</h2>
+                <Link href="/flights" className="btn btn-outline-accent">
+                    Back to Flights
+                </Link>
+            </div>
 
-            <div className="container mt-4">
-                <h1 className="mb-4">My Tickets</h1>
+            {error && <div className="alert alert-danger">{error}</div>}
 
-                {error && (
-                    <div className="alert alert-danger" role="alert">
-                        {error}
-                    </div>
-                )}
-
-                {tickets.length === 0 && !error ? (
-                    <div className="alert alert-info">No tickets found.</div>
-                ) : (
-                    <table className="table table-striped">
+            {tickets.length === 0 && !error ? (
+                <div className="alert alert-info text-center">No tickets booked yet.</div>
+            ) : (
+                <div className="table-responsive">
+                    <table className="table table-striped table-custom">
                         <thead>
                         <tr>
                             <th>Ticket ID</th>
@@ -116,12 +106,10 @@ export default function TicketsPage() {
                         </tr>
                         </thead>
                         <tbody>
-                        {tickets.map((t) => (
+                        {tickets.map(t => (
                             <tr key={t.ticket_id}>
                                 <td>{t.ticket_id}</td>
-                                <td>
-                                    {t.passenger_name} {t.passenger_surname}
-                                </td>
+                                <td>{t.passenger_name} {t.passenger_surname}</td>
                                 <td>{t.passenger_email}</td>
                                 <td>{t.flight_id}</td>
                                 <td>{t.seat_number || '-'}</td>
@@ -129,14 +117,9 @@ export default function TicketsPage() {
                         ))}
                         </tbody>
                     </table>
-                )}
-
-                <div className="mt-4">
-                    <Link href="/flights">
-                        <button className="btn btn-primary">Browse Flights</button>
-                    </Link>
                 </div>
-            </div>
+            )}
         </>
     );
+
 }
